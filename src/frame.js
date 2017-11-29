@@ -23,7 +23,7 @@ Frame.prototype.totalScore = function(bonus = 0) {
 
 Frame.prototype.recurseScore = function(bonus) {
   return this.totalScore(bonus) + 
-    this.next ? this.next.recurseScore(this.bonusRolls()) : 0;
+    (this.next ? this.next.recurseScore(this.bonusRolls()) : 0);
 };
 
 Frame.prototype.isStrike = function() {
@@ -38,5 +38,18 @@ Frame.prototype.isSpare = function() {
 Frame.prototype.bonusRolls = function() {
   if (this.isStrike())  return this.settings.strike;
   if (this.isSpare())   return this.settings.spare;
-  return this.settings.nobonus;
+  return this.settings.noBonus;
 };
+
+Frame.prototype.isAtCapacity = function() {
+  return this.scores.length === this.settings.maxRolls;
+};
+
+Frame.prototype.isComplete = function() {
+  return this.isStrike() || this.isAtCapacity();
+};
+
+Frame.prototype.pushRoll = function(roll) {
+  return this.isComplete() ? false : this.scores.push(roll);
+};
+

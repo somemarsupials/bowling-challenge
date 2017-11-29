@@ -1,11 +1,16 @@
 describe('Frame', function() {
   var frame;
   var child;
-  var settings;
   var array;
+  var settings = { 
+    maxScore: 10, 
+    strike: 2, 
+    spare: 1, 
+    noBonus: 0,
+    maxRolls: 4,
+  };
 
   beforeEach(function() {
-    settings = { maxScore: 10, strike: 2, spare: 1, nobonus: 0 };
     frame = new Frame(5, settings);
     child = new Frame(6);
     array = [1, 2, 3, 4];
@@ -152,9 +157,13 @@ describe('Frame', function() {
   });
 
   describe('#recurseScore', function() {
+    beforeEach(function() {
+      spyOn(frame, 'totalScore').and.returnValue(10);
+    });
+
     describe('when next frame is undefined', function() {
-      it('returns 0', function() {
-        expect(frame.recurseScore()).toEqual(0);
+      it('returns 10', function() {
+        expect(frame.recurseScore()).toEqual(10);
       });
     });
 
@@ -163,18 +172,95 @@ describe('Frame', function() {
 
       beforeEach(function() {
         frame.next = child;
-        spyOn(frame, 'totalScore').and.returnValue(10);
         spyOn(child, 'recurseScore').and.returnValue(10);
         spyOn(frame, 'bonusRolls').and.returnValue(3);
         score = frame.recurseScore();
       });
 
-      it('returns next frame #totalScore', function() {
-        expect(score).toEqual(10);
+      it('returns score and next frame #recurseScore', function() {
+        expect(score).toEqual(20);
       });
 
       it('passes bonus to child', function() {
         expect(child.recurseScore).toHaveBeenCalledWith(3);
+      });
+    });
+  });
+
+  describe('#isAtCapacity', function() {
+    describe('when has maximum rolls', function() {
+      beforeEach(function() {
+        frame.scores = array;
+      });
+
+      it('returns true', function() {
+        expect(frame.isAtCapacity()).toBe(true);
+      });
+    });
+
+    describe('when below maximum rolls', function() {
+      it('returns false', function() {
+        expect(frame.isAtCapacity()).toBe(false);
+      });
+    });
+  });
+
+  describe('#isComplete', function() {
+    describe('when incomplete', function() {
+      it('returns false', function() {
+        expect(frame.isComplete()).toBe(false);
+      });
+    });
+
+    describe('when at capacity', function() {
+      beforeEach(function() {
+        spyOn(frame, 'isAtCapacity').and.returnValue(true);
+      });
+
+      it('returns true', function() {
+        expect(frame.isComplete()).toBe(true);
+      });
+    });
+
+    describe('when a strike', function() {
+      beforeEach(function() {
+        spyOn(frame, 'isStrike').and.returnValue(true);
+      });
+
+      it('returns true', function() {
+        expect(frame.isComplete()).toBe(true);
+      });
+    });
+  });
+  
+  describe('#pushRoll', function() {
+    describe('when complete', function() {
+      beforeEach(function() {
+        spyOn(frame, 'isComplete').and.returnValue(true);
+      });
+
+      it('returns false', function() {
+        expect(frame.pushRoll(5)).toBe(false);
+      });
+
+      it('does not change scores', function() {
+        frame.pushRoll(5);
+        expect(frame.scores).toEqual([]);
+      });
+    });
+
+    describe('when incomplete', function() {
+      beforeEach(function() {
+        spyOn(frame, 'isComplete').and.returnValue(false);
+      });
+
+      it('returns true', function() {
+        expect(frame.pushRoll(5)).toBeTruthy();
+      });
+
+      it('adds score to rolls', function() {
+        frame.pushRoll(5);
+        expect(frame.scores).toEqual([5]);
       });
     });
   });
